@@ -153,7 +153,37 @@ async def cleanchannel(
     await new_ch.edit(position=target.position)
     await target.delete(reason=f"Nuked by {interaction.user}")
     await new_ch.send(f"💣 Channel nuked by {interaction.user.mention}. Fresh start!", delete_after=10)
-
+@bot.tree.command(name="deletechannels", description="Delete ALL channels in the server.")
+@app_commands.default_permissions(administrator=True)
+async def deletechannels(interaction: discord.Interaction):
+    guild = interaction.guild
+ 
+    confirm_view = ConfirmView(timeout=30)
+    await interaction.response.send_message(
+        f"⚠️ **Are you sure?**\n"
+        f"This will delete **every channel** in **{guild.name}**. This cannot be undone.\n\n"
+        f"Click **Confirm** within 30 seconds.",
+        view=confirm_view,
+        ephemeral=True,
+    )
+    await confirm_view.wait()
+ 
+    if not confirm_view.confirmed:
+        await interaction.edit_original_response(content="❌ Cancelled.", view=None)
+        return
+ 
+    await interaction.edit_original_response(content="🗑️ Deleting all channels…", view=None)
+ 
+    deleted = 0
+    for channel in guild.channels:
+        try:
+            await channel.delete(reason=f"Deleted by {interaction.user}")
+            deleted += 1
+            await asyncio.sleep(0.5)
+        except discord.HTTPException:
+            pass
+ 
+    log.info(f"{interaction.user} deleted all channels in {guild.name} — {deleted} channels removed.")
 
 # ── Confirmation UI ───────────────────────────────────────────────────────────
 
